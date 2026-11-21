@@ -59,33 +59,33 @@ CREATE TABLE IF NOT EXISTS catalogo_banca (
 
 CREATE TABLE IF NOT EXISTS historico_aba_macroactivos (
     id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ingestion_year     INT,
-    ingestion_month    INT,
-    ingestion_day      INT,
-    id_sistema_cliente BIGINT,
-    macroactivo        VARCHAR(100),
-    cod_activo         INT REFERENCES catalogo_activos(cod_activo),
-    aba                NUMERIC(40,4),
-    cod_perfil_riesgo  INT REFERENCES cat_perfil_riesgo(cod_perfil_riesgo),
-    cod_banca          VARCHAR(5) REFERENCES catalogo_banca(cod_banca),
-    year               INT,
-    month              INT
+    ingestion_year     TEXT,
+    ingestion_month    TEXT,
+    ingestion_day      TEXT,
+    id_sistema_cliente TEXT,
+    macroactivo        TEXT,
+    cod_activo         TEXT,
+    aba                TEXT,
+    cod_perfil_riesgo  TEXT,
+    cod_banca          TEXT,
+    year               TEXT,
+    month              TEXT
 );
 
 CREATE TABLE IF NOT EXISTS historico_aba_usd_internacional (
     id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ingestion_year     INT,
-    ingestion_month    INT,
-    ingestion_day      INT,
-    id_sistema_cliente BIGINT,
-    simbol             VARCHAR(30),
-    cusip              VARCHAR(30),
-    isin               VARCHAR(30),
-    nombre_activo      VARCHAR(300),
-    cantidad           NUMERIC(24,6),
-    valor_mercado      NUMERIC(24,2),
-    fecha_vencimiento  VARCHAR(20),
-    tasa_cupon         NUMERIC(12,6)
+    ingestion_year     TEXT,
+    ingestion_month    TEXT,
+    ingestion_day      TEXT,
+    id_sistema_cliente TEXT,
+    simbol             TEXT,
+    cusip              TEXT,
+    isin               TEXT,
+    nombre_activo      TEXT,
+    cantidad           TEXT,
+    valor_mercado      TEXT,
+    fecha_vencimiento  TEXT,
+    tasa_cupon         TEXT
 );
 """
 
