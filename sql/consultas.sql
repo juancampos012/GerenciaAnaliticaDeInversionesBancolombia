@@ -51,4 +51,3 @@ SELECT
     COUNT(*) FILTER (WHERE COALESCE(TRIM(ingestion_month), '')    IN ('', 'None', 'nan')) AS mes_ingesta_vacio
 FROM historico_aba_macroactivos;
 
-

@@ -1,0 +1,226 @@
+{% extends "analytics/base.html" %}
+{% load static %}
+
+{% block title %}Modelo{% endblock %}
+
+{% block content %}
+    <style>
+        table.compact { font-size: 13px; }
+        .nowrap { white-space: nowrap; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+        .badge.bajo { background: #cde2fb; color: #0d366b; }
+        .badge.medio { background: #2a78d6; color: #fff; }
+        .badge.alto { background: #104281; color: #fff; }
+    </style>
+
+    <h2>Modelo: riesgo y segmentación de clientes</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Cada activo tiene un nivel de riesgo (bajo, medio o alto) según su volatilidad anual o el perfil publicado por la entidad.
+            El riesgo de un portafolio es el promedio ponderado por saldo (bajo = 1, medio = 2, alto = 3) en la última fecha del cliente.
+            COP y USD se analizan por separado. Detalle en <code>notebooks/client-model.ipynb</code>.
+        </p>
+
+        <div class="kpis">
+            <div class="kpi"><div class="label">Clientes analizados</div><div class="value">{{ total_clients }}</div></div>
+            <div class="kpi"><div class="label">Con perfil para comparar</div><div class="value">{{ compared }}</div></div>
+            <div class="kpi"><div class="label">Alineados (COP)</div><div class="value">{{ aligned }}</div></div>
+            <div class="kpi"><div class="label">Más riesgo que su perfil (COP)</div><div class="value">{{ more_risk }}</div></div>
+            <div class="kpi"><div class="label">Menos riesgo que su perfil (COP)</div><div class="value">{{ less_risk }}</div></div>
+            <div class="kpi"><div class="label">Sin perfil definido</div><div class="value">{{ no_profile }}</div></div>
+        </div>
+
+        <!-- Comparación con el perfil declarado -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Portafolio frente al perfil declarado</h3>
+            <div class="grid-2">
+                <div>
+                    <h4 style="margin: 0 0 8px;">Portafolio COP</h4>
+                    <div id="chart-cop-alignment" style="height: 260px;"></div>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 8px;">Portafolio USD</h4>
+                    <div id="chart-usd-alignment" style="height: 260px;"></div>
+                </div>
+            </div>
+            <h4>Perfil declarado frente al nivel real del portafolio COP</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Perfil declarado</th>
+                        <th class="number">Nivel bajo</th>
+                        <th class="number">Nivel medio</th>
+                        <th class="number">Nivel alto</th>
+                        <th class="number">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in profile_vs_level %}
+                        <tr>
+                            <td>{{ row.perfil_riesgo|default:"—" }}</td>
+                            <td class="number">{{ row.bajo }}</td>
+                            <td class="number">{{ row.medio }}</td>
+                            <td class="number">{{ row.alto }}</td>
+                            <td class="number">{{ row.total }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Segmentos K-means -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Segmentos de clientes (K-means)</h3>
+            {% if has_segments %}
+                <div id="chart-segments" style="height: {{ segments_chart_height }}px;"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Segmento</th>
+                            <th class="number">Clientes</th>
+                            <th class="number">ABA COP (mediana)</th>
+                            <th class="number">% renta variable</th>
+                            <th class="number">% renta fija</th>
+                            <th class="number">% FICs</th>
+                            <th class="number">Riesgo COP</th>
+                            <th class="number">Clientes con USD</th>
+                            <th class="number">Riesgo USD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in segments %}
+                            <tr>
+                                <td>{{ row.segmento }}. {{ row.nombre_segmento }}</td>
+                                <td class="number">{{ row.clientes }}</td>
+                                <td class="number">{{ row.aba_cop_mediana|floatformat:"2g" }}</td>
+                                <td class="number">{{ row.pct_renta_variable|floatformat:"1g" }} %</td>
+                                <td class="number">{{ row.pct_renta_fija|floatformat:"1g" }} %</td>
+                                <td class="number">{{ row.pct_fics|floatformat:"1g" }} %</td>
+                                <td class="number">{{ row.puntaje_cop|floatformat:"2g" }}</td>
+                                <td class="number">{{ row.clientes_usd }}</td>
+                                <td class="number">{{ row.puntaje_usd|floatformat:"2g"|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="warning">Ejecute el notebook <code>notebooks/client-model.ipynb</code> para crear la tabla de segmentos.</div>
+            {% endif %}
+        </div>
+
+        <!-- Resultado por cliente -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Resultado por cliente</h3>
+            <p class="muted">Haga clic en el encabezado de una columna para ordenar. "Sin clasificar" es el % del saldo COP en activos sin código de catálogo.</p>
+            <div class="table-wrapper" style="max-height: 520px;">
+                <table class="sortable compact">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Banca</th>
+                            <th>Perfil</th>
+                            <th>Segmento</th>
+                            <th class="number">ABA (COP)</th>
+                            <th>Riesgo COP</th>
+                            <th>Comparación COP</th>
+                            <th class="number">Valor (USD)</th>
+                            <th>Riesgo USD</th>
+                            <th>Comparación USD</th>
+                            <th class="number">Sin clasificar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'portfolio' %}?cliente={{ client.id_sistema_cliente|urlencode }}">{{ client.id_sistema_cliente }}</a>
+                                    {% if not client.id_confiable %}<br><span class="muted">ID no confiable</span>{% endif %}
+                                </td>
+                                <td>{{ client.banca|default:"—" }}</td>
+                                <td>{{ client.perfil_riesgo|default:"—" }}</td>
+                                <td data-value="{{ client.segmento|default_if_none:'' }}">{% if client.segmento %}{{ client.segmento }}. {{ client.nombre_segmento }}{% else %}—{% endif %}</td>
+                                <td class="number nowrap" data-value="{{ client.aba_cop|stringformat:'s' }}">{{ client.aba_cop|floatformat:"2g" }}</td>
+                                <td class="nowrap" data-value="{{ client.puntaje_cop|default_if_none:''|stringformat:'s' }}">
+                                    {% if client.nivel_cop %}<span class="badge {{ client.nivel_cop }}">{{ client.nivel_cop }}</span> {{ client.puntaje_cop|floatformat:"2g" }}{% else %}—{% endif %}
+                                </td>
+                                <td>{{ client.alineacion_cop }}</td>
+                                <td class="number" data-value="{{ client.valor_usd|default_if_none:''|stringformat:'s' }}">{{ client.valor_usd|floatformat:"2g"|default:"—" }}</td>
+                                <td class="nowrap" data-value="{{ client.puntaje_usd|default_if_none:''|stringformat:'s' }}">
+                                    {% if client.nivel_usd %}<span class="badge {{ client.nivel_usd }}">{{ client.nivel_usd }}</span> {{ client.puntaje_usd|floatformat:"2g" }}{% else %}—{% endif %}
+                                </td>
+                                <td>{{ client.alineacion_usd }}</td>
+                                <td class="number" data-value="{{ client.pct_sin_clasificar_cop|stringformat:'s' }}">{{ client.pct_sin_clasificar_cop|floatformat:"1g" }} %</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Información de mercado usada -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Nivel de riesgo por activo (información de mercado)</h3>
+            <p class="muted">
+                Bajo: volatilidad anual menor a 5 %. Medio: de 5 % a menos de 20 %. Alto: 20 % o más (clases de riesgo de mercado de PRIIPs).
+                FICs y CDT usan el perfil publicado por la entidad.
+            </p>
+            <div class="table-wrapper" style="max-height: 520px;">
+                <table class="sortable compact">
+                    <thead>
+                        <tr>
+                            <th>Moneda</th>
+                            <th>Activo</th>
+                            <th>Tipo</th>
+                            <th>Método</th>
+                            <th class="number">Volatilidad anual</th>
+                            <th>Nivel</th>
+                            <th>Referencia</th>
+                            <th>Fuente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                            <tr>
+                                <td>{{ asset.moneda }}</td>
+                                <td>{{ asset.nombre }}</td>
+                                <td>{{ asset.tipo_activo }}</td>
+                                <td>{{ asset.metodo }}</td>
+                                <td class="number" data-value="{{ asset.volatilidad_anual|default_if_none:''|stringformat:'s' }}">
+                                    {% if asset.volatilidad_anual is not None %}{{ asset.volatilidad_anual|floatformat:"2g" }} %{% else %}—{% endif %}
+                                </td>
+                                <td><span class="badge {{ asset.nivel_riesgo }}">{{ asset.nivel_riesgo }}</span></td>
+                                <td>{{ asset.referencia }}</td>
+                                <td>
+                                    {% if asset.fuente|slice:":4" == "http" %}
+                                        <a href="{{ asset.fuente }}" target="_blank" rel="noopener">ver fuente</a>
+                                    {% else %}
+                                        {{ asset.fuente }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{ chart_data|json_script:"chart-data" }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if chart_data %}
+        {% include "analytics/_echarts.html" %}
+        <script src="{% static 'analytics/table-sort.js' %}"></script>
+        <script>
+            const data = JSON.parse(document.getElementById("chart-data").textContent);
+
+            barChart("chart-cop-alignment", data.cop_alignment.names, data.cop_alignment.values, "Clientes: ");
+            barChart("chart-usd-alignment", data.usd_alignment.names, data.usd_alignment.values, "Clientes: ");
+            barChart("chart-segments", data.segments.names, data.segments.values, "Clientes: ");
+        </script>
+    {% endif %}
+{% endblock %}

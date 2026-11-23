@@ -1,0 +1,116 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Calidad de datos{% endblock %}
+
+{% block content %}
+    <h2>Calidad de datos</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">Problemas encontrados en los archivos originales y cómo quedaron después de la limpieza.</p>
+
+        <!-- Filas en cada etapa -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Filas en cada etapa de la limpieza</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabla</th>
+                        <th class="number">Originales</th>
+                        <th class="number">Repetidas exactas</th>
+                        <th class="number">Rechazadas</th>
+                        <th class="number">Repetidas el mismo día</th>
+                        <th class="number">Limpias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows_by_table %}
+                        <tr>
+                            <td>{{ row.tabla }}</td>
+                            <td class="number">{{ row.originales }}</td>
+                            <td class="number">{{ row.repetidas }}</td>
+                            <td class="number">{{ row.rechazadas }}</td>
+                            <td class="number">{{ row.otras }}</td>
+                            <td class="number"><strong>{{ row.limpias }}</strong></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="muted" style="margin-bottom: 0;">
+                Originales = Repetidas exactas + Rechazadas + Repetidas el mismo día + Limpias.
+                "Repetidas el mismo día" son filas del mismo cliente, activo y día que quedaron iguales después de llenar vacíos.
+            </p>
+        </div>
+
+        <!-- Rechazos e IDs -->
+        <div class="grid-2">
+            <div class="card">
+                <h3 style="margin-top: 0;">Filas rechazadas por motivo</h3>
+                <div id="chart-rejected" style="height: 240px;"></div>
+                <table>
+                    <thead><tr><th>Tabla</th><th>Motivo</th><th class="number">Filas</th></tr></thead>
+                    <tbody>
+                        {% for row in rejected %}
+                            <tr><td>{{ row.tabla }}</td><td>{{ row.motivo_rechazo }}</td><td class="number">{{ row.filas }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top: 0;">Tipos de ID de cliente (macroactivos originales)</h3>
+                <div id="chart-id-types" style="height: 240px;"></div>
+                <table>
+                    <thead><tr><th>Tipo</th><th class="number">Filas</th></tr></thead>
+                    <tbody>
+                        {% for row in id_types %}
+                            <tr><td>{{ row.tipo_id }}</td><td class="number">{{ row.filas }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="muted" style="margin-bottom: 0;">
+                    En la tabla limpia quedan {{ unreliable.clientes }} clientes ({{ unreliable.filas }} filas) con ID en notación científica,
+                    marcados como no confiables.
+                </p>
+            </div>
+        </div>
+
+        <!-- Códigos fuera de catálogo -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Códigos de activo que no están en el catálogo</h3>
+            <div id="chart-catalog" style="height: {{ catalog_chart_height }}px;"></div>
+            <p class="muted" style="margin-bottom: 0;">
+                Se compara contra el catálogo ya corregido: 1015 no aparece porque la limpieza cambió 1115 por 1015 en el catálogo.
+            </p>
+        </div>
+
+        <!-- Correcciones aplicadas -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Correcciones aplicadas en la limpieza</h3>
+            <table>
+                <thead><tr><th>Corrección</th><th class="number">Filas en la tabla limpia</th></tr></thead>
+                <tbody>
+                    {% for row in corrections %}
+                        <tr><td>{{ row.correccion }}</td><td class="number">{{ row.filas }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ chart_data|json_script:"chart-data" }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if chart_data %}
+        {% include "analytics/_echarts.html" %}
+        <script>
+            const data = JSON.parse(document.getElementById("chart-data").textContent);
+
+            barChart("chart-rejected", data.rejected.names, data.rejected.values, "Filas: ");
+            donutChart("chart-id-types", data.id_types, "Filas: ");
+            barChart("chart-catalog", data.out_of_catalog.names, data.out_of_catalog.values, "Filas: ");
+        </script>
+    {% endif %}
+{% endblock %}

@@ -8,6 +8,8 @@ load_dotenv()
 # Scripts SQL que se ejecutan en orden
 SQL_FILES = [
     "sql/clear.sql",
+    "sql/asset-risk.sql",
+    "sql/client-risk.sql",
 ]
 
 # Conectar a la base de datos
@@ -31,7 +33,7 @@ try:
 
     # Guardar los cambios solo si todos los scripts terminaron bien
     db_connection.commit()
-    print("Limpieza terminada.")
+    print("Todos los scripts terminaron.")
 
 except Exception as error:
     # Si algo falla, se deshacen todos los cambios

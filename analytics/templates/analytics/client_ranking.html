@@ -1,0 +1,57 @@
+{% extends "analytics/base.html" %}
+{% load static %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+    <h2>Ranking de clientes</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Portafolio de cada cliente en su última fecha disponible.
+            Haga clic en el encabezado de una columna para ordenar.
+        </p>
+
+        <div class="card">
+            <div class="table-wrapper" style="max-height: none;">
+                <table class="sortable">
+                    <thead>
+                        <tr>
+                            <th class="number">#</th>
+                            <th>Cliente</th>
+                            <th>Banca</th>
+                            <th>Perfil de riesgo</th>
+                            <th class="number">ABA (COP)</th>
+                            <th>Fecha COP</th>
+                            <th class="number">Valor (USD)</th>
+                            <th>Fecha USD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients %}
+                            <tr>
+                                <td class="number">{{ forloop.counter }}</td>
+                                <td>
+                                    <a href="{% url 'portfolio' %}?cliente={{ client.id_sistema_cliente|urlencode }}">{{ client.id_sistema_cliente }}</a>
+                                    {% if not client.confiable %}<span class="muted"> (ID no confiable)</span>{% endif %}
+                                </td>
+                                <td>{{ client.banca|default:"—" }}</td>
+                                <td>{{ client.perfil_riesgo|default:"—" }}</td>
+                                <td class="number" data-value="{{ client.aba_cop|default_if_none:''|stringformat:'s' }}">{{ client.aba_cop|floatformat:"2g"|default:"—" }}</td>
+                                <td>{{ client.fecha_cop|date:"Y-m-d"|default:"—" }}</td>
+                                <td class="number" data-value="{{ client.valor_usd|default_if_none:''|stringformat:'s' }}">{{ client.valor_usd|floatformat:"2g"|default:"—" }}</td>
+                                <td>{{ client.fecha_usd|date:"Y-m-d"|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'analytics/table-sort.js' %}"></script>
+{% endblock %}

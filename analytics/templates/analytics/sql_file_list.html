@@ -1,0 +1,26 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Archivos SQL{% endblock %}
+
+{% block content %}
+    <h2>Archivos SQL del proyecto</h2>
+    <p class="muted">Archivos de la carpeta <code>sql/</code>. Abra uno para ver su contenido y ejecutarlo.</p>
+
+    <div class="card">
+        {% if files %}
+            <table>
+                <thead><tr><th>Archivo</th><th></th></tr></thead>
+                <tbody>
+                    {% for file in files %}
+                        <tr>
+                            <td>{{ file }}</td>
+                            <td style="text-align: right;"><a class="button secondary" href="{% url 'sql_file_detail' file %}">Abrir</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">No hay archivos .sql en la carpeta sql/.</p>
+        {% endif %}
+    </div>
+{% endblock %}

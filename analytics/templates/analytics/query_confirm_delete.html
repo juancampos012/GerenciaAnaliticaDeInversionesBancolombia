@@ -1,0 +1,16 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Eliminar query{% endblock %}
+
+{% block content %}
+    <h2>Eliminar query</h2>
+
+    <div class="card">
+        <p>¿Seguro que quiere eliminar el query <strong>{{ query.name }}</strong>?</p>
+        <form method="post" class="actions">
+            {% csrf_token %}
+            <button type="submit" class="button danger">Sí, eliminar</button>
+            <a class="button secondary" href="{% url 'query_detail' query.pk %}">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

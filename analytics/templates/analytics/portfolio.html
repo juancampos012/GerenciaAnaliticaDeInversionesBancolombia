@@ -1,0 +1,113 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Portafolio por cliente{% endblock %}
+
+{% block content %}
+    <h2>Portafolio por cliente</h2>
+    <p class="muted">Portafolio local (COP) e internacional (USD) en la última fecha disponible de cada cliente.</p>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <div class="card">
+            <form method="get">
+                <label for="cliente">Cliente</label>
+                <select id="cliente" name="cliente" onchange="this.form.submit()">
+                    <option value="">Seleccione un cliente...</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id_sistema_cliente }}" {% if client.id_sistema_cliente == client_id %}selected{% endif %}>
+                            {{ client.id_sistema_cliente }}{% if not client.confiable %} (ID no confiable){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if client_id %}
+            {% if not reliable %}
+                <div class="warning">
+                    El ID de este cliente venía en notación científica y perdió dígitos.
+                    Puede corresponder a más de un cliente real.
+                </div>
+            {% endif %}
+
+            <div class="card">
+                <table>
+                    <tbody>
+                        <tr><th style="width: 220px;">Banca</th><td>{{ banca|default:"—" }}</td></tr>
+                        <tr><th>Perfil de riesgo</th><td>{{ perfil|default:"—" }}</td></tr>
+                        <tr><th>Total portafolio COP</th><td>{% if cop_rows %}$ {{ cop_total|floatformat:"2g" }} (al {{ cop_date|date:"Y-m-d" }}){% else %}Sin datos{% endif %}</td></tr>
+                        <tr><th>Total portafolio USD</th><td>{% if usd_rows %}US$ {{ usd_total|floatformat:"2g" }} (al {{ usd_date|date:"Y-m-d" }}){% else %}Sin datos{% endif %}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Portafolio local (COP) -->
+            <div class="card">
+                <h3 style="margin-top: 0;">Portafolio local (COP)</h3>
+                {% if cop_rows %}
+                    <p class="muted">Fecha: {{ cop_date|date:"Y-m-d" }}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px;">
+                        <div id="chart-cop-macro" style="height: 320px;"></div>
+                        <div id="chart-cop-asset" style="height: 320px;"></div>
+                    </div>
+                    <table>
+                        <thead><tr><th>Macroactivo</th><th>Activo</th><th class="number">ABA (COP)</th></tr></thead>
+                        <tbody>
+                            {% for row in cop_rows %}
+                                <tr>
+                                    <td>{{ row.macroactivo }}</td>
+                                    <td>{{ row.activo }}</td>
+                                    <td class="number">{{ row.aba|floatformat:"2g" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="muted">Este cliente no tiene portafolio local.</p>
+                {% endif %}
+            </div>
+
+            <!-- Portafolio internacional (USD) -->
+            <div class="card">
+                <h3 style="margin-top: 0;">Portafolio internacional (USD)</h3>
+                {% if usd_rows %}
+                    <p class="muted">Fecha: {{ usd_date|date:"Y-m-d" }}</p>
+                    <div id="chart-usd-asset" style="height: {{ usd_chart_height }}px;"></div>
+                    <table>
+                        <thead><tr><th>Símbolo</th><th>ISIN</th><th>Activo</th><th class="number">Cantidad</th><th class="number">Valor de mercado (USD)</th></tr></thead>
+                        <tbody>
+                            {% for row in usd_rows %}
+                                <tr>
+                                    <td>{{ row.simbolo|default:"—" }}</td>
+                                    <td>{{ row.isin|default:"—" }}</td>
+                                    <td>{{ row.nombre_activo }}</td>
+                                    <td class="number">{{ row.cantidad|floatformat:"-3g" }}</td>
+                                    <td class="number">{{ row.valor_mercado_usd|floatformat:"2g" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="muted">Este cliente no tiene portafolio internacional.</p>
+                {% endif %}
+            </div>
+
+            {{ chart_data|json_script:"chart-data" }}
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if chart_data %}
+        {% include "analytics/_echarts.html" %}
+        <script>
+            const data = JSON.parse(document.getElementById("chart-data").textContent);
+
+            // COP por macroactivo: dona. COP y USD por activo: barras
+            donutChart("chart-cop-macro", data.cop_by_macro, "$ ");
+            barChart("chart-cop-asset", data.cop_by_asset.names, data.cop_by_asset.values, "$ ");
+            barChart("chart-usd-asset", data.usd_by_asset.names, data.usd_by_asset.values, "US$ ");
+        </script>
+    {% endif %}
+{% endblock %}
