@@ -1,0 +1,19 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}{% if query %}Editar query{% else %}Nuevo query{% endif %}{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'query_list' %}">← Queries guardados</a></p>
+    <h2>{% if query %}Editar: {{ query.name }}{% else %}Nuevo query{% endif %}</h2>
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="actions">
+                <button type="submit" class="button">Guardar</button>
+                <a class="button secondary" href="{% if query %}{% url 'query_detail' query.pk %}{% else %}{% url 'query_list' %}{% endif %}">Cancelar</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

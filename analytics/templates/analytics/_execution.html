@@ -1,0 +1,37 @@
+{# Resultado de ejecutar uno o varios queries #}
+{% if execution %}
+    {% if execution.ok %}
+        <div class="success">Ejecución terminada: {{ execution.results|length }} query(s) ejecutado(s) correctamente.</div>
+    {% else %}
+        <div class="error">
+            <strong>Error. No se guardó ningún cambio.</strong><br>
+            {{ execution.error|linebreaksbr }}
+        </div>
+    {% endif %}
+
+    {% for result in execution.results %}
+        <div class="card">
+            <h3 style="margin-top: 0;">{{ forloop.counter }}. {{ result.title }}</h3>
+
+            {% if result.columns %}
+                <p class="muted">
+                    {{ result.rows|length }} fila(s){% if result.truncated %}. Se muestran solo las primeras {{ result.rows|length }}{% endif %}.
+                </p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>{% for column in result.columns %}<th>{{ column }}</th>{% endfor %}</tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result.rows %}
+                                <tr>{% for value in row %}<td>{{ value|default_if_none:"NULL" }}</td>{% endfor %}</tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="muted">Filas afectadas: {% if result.rowcount >= 0 %}{{ result.rowcount }}{% else %}no aplica{% endif %}</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endif %}

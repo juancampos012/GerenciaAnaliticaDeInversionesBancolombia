@@ -1,0 +1,21 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}{{ filename }}{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'sql_file_list' %}">← Archivos SQL</a></p>
+    <h2>{{ filename }}</h2>
+
+    <form method="post" class="actions">
+        {% csrf_token %}
+        <button type="submit" class="button">Ejecutar archivo</button>
+        <span class="muted">Se ejecuta todo el archivo en una sola transacción.</span>
+    </form>
+
+    {% include "analytics/_execution.html" %}
+
+    <div class="card">
+        <h3 style="margin-top: 0;">Contenido</h3>
+        <pre class="sql">{{ sql_text }}</pre>
+    </div>
+{% endblock %}
