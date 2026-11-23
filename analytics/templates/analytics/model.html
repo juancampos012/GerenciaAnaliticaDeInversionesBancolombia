@@ -4,15 +4,6 @@
 {% block title %}Modelo{% endblock %}
 
 {% block content %}
-    <style>
-        table.compact { font-size: 13px; }
-        .nowrap { white-space: nowrap; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
-        .badge.bajo { background: #cde2fb; color: #0d366b; }
-        .badge.medio { background: #2a78d6; color: #fff; }
-        .badge.alto { background: #104281; color: #fff; }
-    </style>
-
     <h2>Modelo: riesgo y segmentación de clientes</h2>
 
     {% if error %}
@@ -137,6 +128,7 @@
                             <tr>
                                 <td>
                                     <a href="{% url 'portfolio' %}?cliente={{ client.id_sistema_cliente|urlencode }}">{{ client.id_sistema_cliente }}</a>
+                                    · <a href="{% url 'client_card' %}?cliente={{ client.id_sistema_cliente|urlencode }}">ficha</a>
                                     {% if not client.id_confiable %}<br><span class="muted">ID no confiable</span>{% endif %}
                                 </td>
                                 <td>{{ client.banca|default:"—" }}</td>
