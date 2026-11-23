@@ -1,0 +1,127 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Ficha del cliente{% endblock %}
+
+{% block content %}
+    <h2>Ficha del cliente</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Reúne en una sola vista el riesgo del portafolio, la alineación con el perfil, la simulación de rebalanceo
+            y el valor de hoy de las acciones y ETF de EE.UU.
+        </p>
+
+        <div class="card">
+            <form method="get">
+                <label for="cliente">Cliente</label>
+                <select id="cliente" name="cliente" onchange="this.form.submit()">
+                    <option value="">Seleccione un cliente...</option>
+                    {% for row in clients %}
+                        <option value="{{ row.id_sistema_cliente }}" {% if row.id_sistema_cliente == client_id %}selected{% endif %}>
+                            {{ row.id_sistema_cliente }}{% if not row.id_confiable %} (ID no confiable){% endif %} · {{ row.perfil_riesgo|default:"sin perfil" }} · {{ row.alineacion_cop }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if client %}
+            {% if not client.id_confiable %}
+                <div class="warning">El ID venía en notación científica y perdió dígitos. Puede mezclar a más de un cliente real.</div>
+            {% endif %}
+
+            <div class="kpis">
+                <div class="kpi"><div class="label">Banca</div><div class="value">{{ client.banca|default:"—" }}</div></div>
+                <div class="kpi"><div class="label">Perfil declarado</div><div class="value">{{ client.perfil_riesgo|default:"—" }}</div></div>
+                <div class="kpi"><div class="label">Segmento</div><div class="value" style="font-size: 17px;">{% if segment %}{{ segment.segmento }}. {{ segment.nombre_segmento }}{% else %}—{% endif %}</div></div>
+                <div class="kpi">
+                    <div class="label">Riesgo COP</div>
+                    <div class="value">{% if client.nivel_cop %}<span class="badge {{ client.nivel_cop }}">{{ client.nivel_cop }}</span> {{ client.puntaje_cop|floatformat:"2g" }}{% else %}—{% endif %}</div>
+                    <div class="muted">{{ client.alineacion_cop }}</div>
+                </div>
+                <div class="kpi">
+                    <div class="label">Riesgo USD</div>
+                    <div class="value">{% if client.nivel_usd %}<span class="badge {{ client.nivel_usd }}">{{ client.nivel_usd }}</span> {{ client.puntaje_usd|floatformat:"2g" }}{% else %}—{% endif %}</div>
+                    <div class="muted">{{ client.alineacion_usd }}</div>
+                </div>
+            </div>
+
+            <!-- Rebalanceo -->
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-top: 0;">Rebalanceo COP (simulación)</h3>
+                    {% include "analytics/_rebalance_block.html" with suggestion=cop_suggestion options=cop_options prefix="$" alignment=client.alineacion_cop %}
+                </div>
+                <div class="card">
+                    <h3 style="margin-top: 0;">Rebalanceo USD (simulación)</h3>
+                    {% if usd_positions %}
+                        {% include "analytics/_rebalance_block.html" with suggestion=usd_suggestion options=usd_options prefix="US$" alignment=client.alineacion_usd %}
+                    {% else %}
+                        <p class="muted">Sin portafolio USD.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Portafolio COP -->
+            <div class="card">
+                <h3 style="margin-top: 0;">Portafolio COP al {{ cop_date|date:"Y-m-d" }}</h3>
+                <p class="muted">
+                    Total $ {{ client.aba_cop|floatformat:"2g" }} · Renta variable {{ client.pct_renta_variable|floatformat:"2g" }} %
+                    · Renta fija {{ client.pct_renta_fija|floatformat:"2g" }} % · FICs {{ client.pct_fics|floatformat:"2g" }} %
+                    · Sin clasificar {{ client.pct_sin_clasificar_cop|floatformat:"2g" }} %
+                </p>
+                <div class="table-wrapper">
+                    <table class="compact">
+                        <thead><tr><th>Macroactivo</th><th>Activo</th><th>Nivel</th><th class="number">ABA (COP)</th></tr></thead>
+                        <tbody>
+                            {% for row in cop_positions %}
+                                <tr>
+                                    <td>{{ row.macroactivo }}</td>
+                                    <td>{{ row.activo }}</td>
+                                    <td>{% if row.nivel_riesgo %}<span class="badge {{ row.nivel_riesgo }}">{{ row.nivel_riesgo }}</span>{% else %}<span class="muted">sin clasificar</span>{% endif %}</td>
+                                    <td class="number">{{ row.valor|floatformat:"2g" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Portafolio USD con precios de hoy -->
+            {% if usd_positions %}
+                <div class="card">
+                    <h3 style="margin-top: 0;">Portafolio USD al {{ usd_date|date:"Y-m-d" }}</h3>
+                    <p class="muted">
+                        Total US$ {{ client.valor_usd|floatformat:"2g" }} · Sin clasificar {{ client.pct_sin_clasificar_usd|floatformat:"2g" }} %
+                        {% if market_summary and market_summary.con_precio %}
+                            · Acciones y ETF de EE.UU. con precio de hoy: {{ market_summary.cobertura|floatformat:"2g" }} % del portafolio,
+                            variación {{ market_summary.variacion|floatformat:"2g" }} %
+                        {% endif %}
+                        {% if rates.variation is not None %}· TRM {{ rates.variation|floatformat:"2g" }} % desde la fecha de los datos{% endif %}
+                    </p>
+                    <div class="table-wrapper">
+                        <table class="compact">
+                            <thead><tr><th>Activo</th><th>Nivel</th><th class="number">Valor en los datos (US$)</th><th class="number">Valor hoy (US$)</th><th class="number">Variación</th></tr></thead>
+                            <tbody>
+                                {% for row in usd_positions %}
+                                    <tr>
+                                        <td>{{ row.activo }}</td>
+                                        <td>{% if row.nivel_riesgo %}<span class="badge {{ row.nivel_riesgo }}">{{ row.nivel_riesgo }}</span>{% else %}<span class="muted">sin clasificar</span>{% endif %}</td>
+                                        <td class="number">{{ row.valor|floatformat:"2g" }}</td>
+                                        <td class="number">{% if row.valor_hoy is not None %}{{ row.valor_hoy|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                        <td class="number">{% if row.variacion is not None %}{{ row.variacion|floatformat:"2g" }} %{% else %}—{% endif %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if not has_prices %}
+                        <p class="muted">Para ver el valor de hoy, actualice los precios en la página <a href="{% url 'market' %}">Mercado</a>.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "analytics/base.html" %}
+{% load static %}
+
+{% block title %}Rebalanceo{% endblock %}
+
+{% block content %}
+    <h2>Sugerencia de rebalanceo</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Simulación educativa, no es una recomendación de inversión. Para cada portafolio que no está alineado con el perfil
+            se calcula el traslado mínimo hacia activos del nivel del perfil (conservador = bajo, moderado = medio, agresivo = alto)
+            para que el puntaje ponderado entre en el rango del perfil. Se traslada primero desde el nivel más lejano y desde el activo de mayor saldo.
+            COP y USD se calculan por separado. Los activos sin nivel no se mueven.
+        </p>
+
+        <div class="kpis">
+            <div class="kpi"><div class="label">Clientes con perfil para comparar</div><div class="value">{{ compared }}</div></div>
+            <div class="kpi"><div class="label">Clientes con traslado sugerido</div><div class="value">{{ clients_to_move }}</div></div>
+            <div class="kpi"><div class="label">Total a trasladar (COP)</div><div class="value">$ {{ total_cop|floatformat:"0g" }}</div></div>
+            <div class="kpi"><div class="label">Total a trasladar (USD)</div><div class="value">US$ {{ total_usd|floatformat:"0g" }}</div></div>
+        </div>
+
+        <div class="card">
+            {% if rows %}
+                <div class="table-wrapper" style="max-height: 640px;">
+                    <table class="sortable compact">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Moneda</th>
+                                <th>Perfil</th>
+                                <th>Situación</th>
+                                <th class="number">Puntaje actual</th>
+                                <th class="number">Puntaje objetivo</th>
+                                <th class="number">Monto a trasladar</th>
+                                <th class="number">% del portafolio</th>
+                                <th>Desde</th>
+                                <th>Hacia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                <tr>
+                                    <td class="nowrap">
+                                        <a href="{% url 'client_card' %}?cliente={{ row.client.id_sistema_cliente|urlencode }}">{{ row.client.id_sistema_cliente }}</a>
+                                        {% if not row.client.id_confiable %}<br><span class="muted">ID no confiable</span>{% endif %}
+                                    </td>
+                                    <td>{{ row.currency }}</td>
+                                    <td>{{ row.client.perfil_riesgo }}</td>
+                                    <td>{{ row.alignment }}</td>
+                                    <td class="number" data-value="{{ row.suggestion.current_score|stringformat:'s' }}">{{ row.suggestion.current_score|floatformat:"2g" }}</td>
+                                    <td class="number" data-value="{{ row.suggestion.target_score|stringformat:'s' }}">{{ row.suggestion.target_score|floatformat:"2g" }}</td>
+                                    <td class="number nowrap" data-value="{{ row.suggestion.total_to_move|stringformat:'s' }}">
+                                        {% if row.currency == "USD" %}US${% else %}${% endif %} {{ row.suggestion.total_to_move|floatformat:"0g" }}
+                                    </td>
+                                    <td class="number" data-value="{{ row.suggestion.pct_to_move|stringformat:'s' }}">{{ row.suggestion.pct_to_move|floatformat:"2g" }} %</td>
+                                    <td>
+                                        {% for move in row.suggestion.moves %}
+                                            <span class="badge {{ move.nivel_riesgo }}">{{ move.nivel_riesgo }}</span> {{ move.activo }}{% if not forloop.last %}<br>{% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td class="nowrap">
+                                        <span class="badge {{ row.suggestion.profile_level }}">{{ row.suggestion.profile_level }}</span>
+                                        <span class="muted">({{ row.options }} opciones)</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted">El detalle por activo y las opciones de destino están en la ficha de cada cliente.</p>
+            {% else %}
+                <p class="muted">Todos los portafolios comparables están alineados con su perfil.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'analytics/table-sort.js' %}"></script>
+{% endblock %}

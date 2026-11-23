@@ -1,0 +1,101 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Resumen{% endblock %}
+
+{% block content %}
+    <h2>Resumen</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Se usa la última fecha disponible de cada cliente.
+            COP: {{ dates.cop_desde|date:"Y-m-d" }}{% if dates.cop_desde != dates.cop_hasta %} a {{ dates.cop_hasta|date:"Y-m-d" }}{% endif %}.
+            USD: {{ dates.usd_desde|date:"Y-m-d" }}{% if dates.usd_desde != dates.usd_hasta %} a {{ dates.usd_hasta|date:"Y-m-d" }}{% endif %}.
+        </p>
+
+        <!-- ABA por banca -->
+        <div class="card">
+            <h3 style="margin-top: 0;">ABA por banca (COP)</h3>
+            <div class="grid-2">
+                <div id="chart-bank-aba" style="height: 280px;"></div>
+                <div id="chart-bank-clients" style="height: 280px;"></div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Banca</th><th class="number">Clientes</th><th class="number">ABA (COP)</th><th class="number">% del total</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in banks %}
+                        <tr>
+                            <td>{{ row.banca }}</td>
+                            <td class="number">{{ row.clientes }}</td>
+                            <td class="number">{{ row.aba_total|floatformat:"2g" }}</td>
+                            <td class="number">{% widthratio row.aba_total bank_total 100 %} %</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top activos COP -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Top 10 activos en pesos (COP)</h3>
+            <div id="chart-top-cop" style="height: 360px;"></div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Activo</th><th>Macroactivo</th><th class="number">Clientes</th><th class="number">ABA (COP)</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in top_cop %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ row.activo }}</td>
+                            <td>{{ row.macroactivo }}</td>
+                            <td class="number">{{ row.clientes }}</td>
+                            <td class="number">{{ row.aba_total|floatformat:"2g" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top activos USD -->
+        <div class="card">
+            <h3 style="margin-top: 0;">Top 10 activos en dólares (USD)</h3>
+            <div id="chart-top-usd" style="height: 360px;"></div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Activo</th><th>ISIN</th><th class="number">Clientes</th><th class="number">Valor de mercado (USD)</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in top_usd %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ row.nombre_activo }}</td>
+                            <td>{{ row.isin|default:"—" }}</td>
+                            <td class="number">{{ row.clientes }}</td>
+                            <td class="number">{{ row.valor_total|floatformat:"2g" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ chart_data|json_script:"chart-data" }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if chart_data %}
+        {% include "analytics/_echarts.html" %}
+        <script>
+            const data = JSON.parse(document.getElementById("chart-data").textContent);
+
+            barChart("chart-bank-aba", data.banks.names, data.banks.aba, "$ ");
+            barChart("chart-bank-clients", data.banks.names, data.banks.clients, "Clientes: ");
+            barChart("chart-top-cop", data.top_cop.names, data.top_cop.values, "$ ");
+            barChart("chart-top-usd", data.top_usd.names, data.top_usd.values, "US$ ");
+        </script>
+    {% endif %}
+{% endblock %}

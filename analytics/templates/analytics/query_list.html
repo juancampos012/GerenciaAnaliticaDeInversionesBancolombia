@@ -1,0 +1,34 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}Queries guardados{% endblock %}
+
+{% block content %}
+    <h2>Queries guardados</h2>
+
+    <div class="actions">
+        <a class="button" href="{% url 'query_create' %}">Nuevo query</a>
+    </div>
+
+    <div class="card">
+        {% if queries %}
+            <table>
+                <thead><tr><th>Nombre</th><th>Descripción</th><th>Actualizado</th><th></th></tr></thead>
+                <tbody>
+                    {% for query in queries %}
+                        <tr>
+                            <td><a href="{% url 'query_detail' query.pk %}">{{ query.name }}</a></td>
+                            <td>{{ query.description|truncatechars:80 }}</td>
+                            <td>{{ query.updated_at|date:"Y-m-d H:i" }}</td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a class="button secondary" href="{% url 'query_edit' query.pk %}">Editar</a>
+                                <a class="button danger" href="{% url 'query_delete' query.pk %}">Eliminar</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">Todavía no hay queries guardados.</p>
+        {% endif %}
+    </div>
+{% endblock %}

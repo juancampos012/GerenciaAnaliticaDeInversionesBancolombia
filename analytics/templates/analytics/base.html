@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Gerencia Analítica de Inversiones{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2933; background: #f4f6f8; }
+        header { background: #1f2933; color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 24px; }
+        header h1 { font-size: 17px; margin: 0; padding: 16px 0; font-weight: 600; white-space: nowrap; }
+        nav a { color: #cbd2d9; text-decoration: none; margin-right: 14px; font-size: 13px; padding: 18px 0; display: inline-block; border-bottom: 3px solid transparent; }
+        nav a:hover { color: #fff; }
+        nav a.active { color: #fff; border-bottom-color: #3ebd93; }
+        main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        h2 { margin-top: 0; }
+        .card { background: #fff; border: 1px solid #e4e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .muted { color: #7b8794; }
+        .error { background: #fde8e8; border: 1px solid #f8b4b4; color: #9b1c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+        .success { background: #e3f9e5; border: 1px solid #a3e4ad; color: #1d6b2c; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+        .warning { background: #fff8e1; border: 1px solid #f7d070; color: #8d5b00; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e4e7eb; }
+        th { background: #f5f7fa; font-weight: 600; }
+        td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
+        .table-wrapper { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+        pre.sql { background: #1f2933; color: #e4e7eb; padding: 16px; border-radius: 6px; overflow: auto; max-height: 420px; font-size: 13px; }
+        .button { display: inline-block; background: #2186eb; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; text-decoration: none; }
+        .button.secondary { background: #e4e7eb; color: #1f2933; }
+        .button.danger { background: #d64545; }
+        .actions { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+        form p { margin: 0 0 14px; }
+        label { display: block; font-weight: 600; margin-bottom: 4px; }
+        input[type=text], textarea, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd2d9; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        textarea.sql-editor { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+        .errorlist { color: #9b1c1c; margin: 4px 0; padding-left: 18px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .kpi { background: #fff; border: 1px solid #e4e7eb; border-radius: 8px; padding: 16px; }
+        .kpi .label { color: #7b8794; font-size: 13px; }
+        .kpi .value { font-size: 24px; font-weight: 600; margin-top: 4px; }
+        table.sortable th { cursor: pointer; user-select: none; }
+        table.sortable th.asc::after { content: " ▲"; font-size: 10px; }
+        table.sortable th.desc::after { content: " ▼"; font-size: 10px; }
+        table.compact { font-size: 13px; }
+        .nowrap { white-space: nowrap; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+        .badge.bajo { background: #cde2fb; color: #0d366b; }
+        .badge.medio { background: #2a78d6; color: #fff; }
+        .badge.alto { background: #104281; color: #fff; }
+        @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gerencia Analítica de Inversiones</h1>
+        <nav>
+            {% url 'portfolio' as portfolio_url %}
+            {% url 'client_ranking' as clients_url %}
+            {% url 'summary' as summary_url %}
+            {% url 'data_quality' as quality_url %}
+            {% url 'model' as model_url %}
+            {% url 'client_card' as card_url %}
+            {% url 'rebalance' as rebalance_url %}
+            {% url 'market' as market_url %}
+            {% url 'sql_file_list' as sql_url %}
+            {% url 'query_list' as queries_url %}
+            <a href="{{ portfolio_url }}" class="{% if request.path == portfolio_url %}active{% endif %}">Portafolio</a>
+            <a href="{{ clients_url }}" class="{% if request.path == clients_url %}active{% endif %}">Clientes</a>
+            <a href="{{ summary_url }}" class="{% if request.path == summary_url %}active{% endif %}">Resumen</a>
+            <a href="{{ quality_url }}" class="{% if request.path == quality_url %}active{% endif %}">Calidad de datos</a>
+            <a href="{{ model_url }}" class="{% if request.path == model_url %}active{% endif %}">Modelo</a>
+            <a href="{{ card_url }}" class="{% if request.path == card_url %}active{% endif %}">Ficha</a>
+            <a href="{{ rebalance_url }}" class="{% if request.path == rebalance_url %}active{% endif %}">Rebalanceo</a>
+            <a href="{{ market_url }}" class="{% if request.path == market_url %}active{% endif %}">Mercado</a>
+            <a href="{{ sql_url }}" class="{% if sql_url in request.path %}active{% endif %}">Archivos SQL</a>
+            <a href="{{ queries_url }}" class="{% if queries_url in request.path %}active{% endif %}">Queries guardados</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends "analytics/base.html" %}
+
+{% block title %}{{ query.name }}{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'query_list' %}">← Queries guardados</a></p>
+    <h2>{{ query.name }}</h2>
+    {% if query.description %}<p class="muted">{{ query.description }}</p>{% endif %}
+
+    <div class="actions">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="button">Ejecutar</button>
+        </form>
+        <a class="button secondary" href="{% url 'query_edit' query.pk %}">Editar</a>
+        <a class="button danger" href="{% url 'query_delete' query.pk %}">Eliminar</a>
+    </div>
+
+    {% include "analytics/_execution.html" %}
+
+    <div class="card">
+        <h3 style="margin-top: 0;">SQL</h3>
+        <pre class="sql">{{ query.sql }}</pre>
+    </div>
+{% endblock %}

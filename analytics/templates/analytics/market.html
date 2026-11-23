@@ -1,0 +1,129 @@
+{% extends "analytics/base.html" %}
+{% load static %}
+
+{% block title %}Mercado{% endblock %}
+
+{% block content %}
+    <h2>Precios de mercado actuales</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% else %}
+        <p class="muted">
+            Los datos del archivo van hasta {{ rates.data_date|date:"Y-m-d" }}. Esta página actualiza el valor de las acciones y ETF de EE.UU.
+            con el último cierre de Yahoo Finance (ajustando la cantidad por splits) y trae la TRM oficial de datos.gov.co.
+            No incluye dividendos ni el resto de activos USD (fondos, bonos y notas), que no tienen precio público diario en esta fuente.
+        </p>
+
+        <form method="post" class="actions">
+            {% csrf_token %}
+            <button type="submit" class="button">Actualizar precios y TRM</button>
+            {% if last_update %}<span class="muted">Última consulta: {{ last_update|date:"Y-m-d H:i" }}</span>{% endif %}
+        </form>
+
+        {% for notice in notices %}<div class="success">{{ notice }}</div>{% endfor %}
+        {% if errors %}
+            <div class="warning">
+                No se pudo consultar todo:
+                <ul>{% for item in errors %}<li>{{ item }}</li>{% endfor %}</ul>
+            </div>
+        {% endif %}
+
+        <div class="kpis">
+            <div class="kpi">
+                <div class="label">TRM al {{ rates.data_date|date:"Y-m-d" }}</div>
+                <div class="value">{% if rates.old %}$ {{ rates.old.value|floatformat:"2g" }}{% else %}—{% endif %}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">TRM vigente{% if rates.latest %} desde {{ rates.latest.valid_from|date:"Y-m-d" }}{% endif %}</div>
+                <div class="value">{% if rates.latest %}$ {{ rates.latest.value|floatformat:"2g" }}{% else %}—{% endif %}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Variación de la TRM</div>
+                <div class="value">{% if rates.variation is not None %}{{ rates.variation|floatformat:"2g" }} %{% else %}—{% endif %}</div>
+            </div>
+        </div>
+        {% if rates.variation is not None %}
+            <p class="muted">La variación de la TRM es el efecto cambiario que tiene en pesos un portafolio USD que no cambió de valor en dólares.</p>
+        {% endif %}
+
+        {% if not has_prices %}
+            <div class="warning">Todavía no hay precios guardados. Presione "Actualizar precios y TRM".</div>
+        {% endif %}
+
+        <div class="card">
+            <h3 style="margin-top: 0;">Precio en los datos frente al precio de hoy</h3>
+            <div class="table-wrapper">
+                <table class="sortable compact">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Activo</th>
+                            <th class="number">Clientes</th>
+                            <th class="number">Precio en los datos (US$)</th>
+                            <th class="number">Split desde entonces</th>
+                            <th class="number">Precio de hoy (US$)</th>
+                            <th>Fecha del precio</th>
+                            <th class="number">Variación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ticker_rows %}
+                            <tr>
+                                <td>{{ row.ticker }}</td>
+                                <td>{{ row.activo }}</td>
+                                <td class="number">{{ row.clientes }}</td>
+                                <td class="number" data-value="{{ row.precio_datos|stringformat:'s' }}">{{ row.precio_datos|floatformat:"2g" }}</td>
+                                <td class="number" data-value="{{ row.factor_split|default_if_none:''|stringformat:'s' }}">{% if row.factor_split and row.factor_split != 1 %}× {{ row.factor_split|floatformat:"-4g" }}{% else %}—{% endif %}</td>
+                                <td class="number" data-value="{{ row.precio_hoy|default_if_none:''|stringformat:'s' }}">{% if row.precio_hoy is not None %}{{ row.precio_hoy|floatformat:"2g" }}{% else %}Sin precio{% endif %}</td>
+                                <td class="nowrap">{{ row.fecha_precio|date:"Y-m-d"|default:"—" }}</td>
+                                <td class="number" data-value="{{ row.variacion|default_if_none:''|stringformat:'s' }}">{% if row.variacion is not None %}{{ row.variacion|floatformat:"2g" }} %{% else %}—{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted">Variación = cantidad × split × precio de hoy frente al valor de mercado del archivo. Block Inc cambió de SQ a XYZ en enero de 2025.</p>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0;">Portafolio USD de cada cliente con precios de hoy</h3>
+            <div class="table-wrapper">
+                <table class="sortable compact">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th class="number">Portafolio USD en los datos</th>
+                            <th class="number">% con precio de hoy</th>
+                            <th class="number">Valor en los datos (con precio)</th>
+                            <th class="number">Valor hoy (con precio)</th>
+                            <th class="number">Variación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in client_rows %}
+                            <tr>
+                                <td class="nowrap">
+                                    <a href="{% url 'client_card' %}?cliente={{ row.client.id_sistema_cliente|urlencode }}">{{ row.client.id_sistema_cliente }}</a>
+                                    {% if not row.client.id_confiable %}<br><span class="muted">ID no confiable</span>{% endif %}
+                                </td>
+                                <td class="number" data-value="{{ row.total_usd|stringformat:'s' }}">{{ row.total_usd|floatformat:"2g" }}</td>
+                                <td class="number" data-value="{{ row.cobertura|default_if_none:''|stringformat:'s' }}">{% if row.con_precio %}{{ row.cobertura|floatformat:"2g" }} %{% else %}—{% endif %}</td>
+                                <td class="number" data-value="{{ row.valor_datos|stringformat:'s' }}">{% if row.con_precio %}{{ row.valor_datos|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                <td class="number" data-value="{{ row.valor_hoy|stringformat:'s' }}">{% if row.con_precio %}{{ row.valor_hoy|floatformat:"2g" }}{% else %}—{% endif %}</td>
+                                <td class="number" data-value="{{ row.variacion|default_if_none:''|stringformat:'s' }}">{% if row.variacion is not None %}{{ row.variacion|floatformat:"2g" }} %{% else %}—{% endif %}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6" class="muted">Ningún cliente tiene acciones o ETF de EE.UU.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted">Solo aparecen los clientes que tienen acciones o ETF de EE.UU. en su última fecha.</p>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'analytics/table-sort.js' %}"></script>
+{% endblock %}
