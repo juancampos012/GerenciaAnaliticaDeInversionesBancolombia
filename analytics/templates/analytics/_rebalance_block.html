@@ -1,0 +1,32 @@
+{% if not suggestion %}
+    <p class="muted">No se puede simular: {{ alignment|lower }}.</p>
+{% elif not suggestion.moves %}
+    <p>Alineado con el perfil (puntaje {{ suggestion.current_score|floatformat:"2g" }}). No requiere traslado.</p>
+{% else %}
+    <p>
+        Puntaje actual {{ suggestion.current_score|floatformat:"2g" }} → objetivo {{ suggestion.target_score|floatformat:"2g" }}.
+        Trasladar <strong>{{ prefix }} {{ suggestion.total_to_move|floatformat:"0g" }}</strong>
+        ({{ suggestion.pct_to_move|floatformat:"2g" }} % del portafolio clasificado) hacia activos de nivel
+        <span class="badge {{ suggestion.profile_level }}">{{ suggestion.profile_level }}</span>.
+    </p>
+    <table class="compact">
+        <thead><tr><th>Desde</th><th>Nivel</th><th class="number">Monto</th><th class="number">% del activo</th></tr></thead>
+        <tbody>
+            {% for move in suggestion.moves %}
+                <tr>
+                    <td>{{ move.activo }}</td>
+                    <td><span class="badge {{ move.nivel_riesgo }}">{{ move.nivel_riesgo }}</span></td>
+                    <td class="number nowrap">{{ prefix }} {{ move.monto|floatformat:"0g" }}</td>
+                    <td class="number">{{ move.pct_del_activo|floatformat:"2g" }} %</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <details style="margin-top: 10px;">
+        <summary>Opciones de destino con nivel {{ suggestion.profile_level }} ({{ options|length }})</summary>
+        <ul class="compact">
+            {% for name in options %}<li>{{ name }}</li>{% endfor %}
+        </ul>
+    </details>
+    <p class="muted">Simulación educativa con los niveles de la tabla activos_riesgo; no es una recomendación de inversión.</p>
+{% endif %}

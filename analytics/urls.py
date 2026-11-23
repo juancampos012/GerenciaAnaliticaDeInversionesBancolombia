@@ -1,7 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import model_views, views
+from . import insight_views, model_views, views
 
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="portfolio"), name="home"),
@@ -14,6 +14,11 @@ urlpatterns = [
     path("resumen/", views.summary, name="summary"),
     path("calidad/", views.data_quality, name="data_quality"),
     path("modelo/", model_views.model, name="model"),
+
+    # Funcionalidades adicionales: ficha del cliente, rebalanceo y precios de mercado
+    path("ficha/", insight_views.client_card, name="client_card"),
+    path("rebalanceo/", insight_views.rebalance, name="rebalance"),
+    path("mercado/", insight_views.market, name="market"),
 
     # Archivos .sql del proyecto
     path("sql/", views.sql_file_list, name="sql_file_list"),

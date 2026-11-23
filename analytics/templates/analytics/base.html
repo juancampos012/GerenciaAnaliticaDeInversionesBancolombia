@@ -7,9 +7,9 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2933; background: #f4f6f8; }
-        header { background: #1f2933; color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 32px; }
-        header h1 { font-size: 17px; margin: 0; padding: 16px 0; font-weight: 600; }
-        nav a { color: #cbd2d9; text-decoration: none; margin-right: 20px; padding: 18px 0; display: inline-block; border-bottom: 3px solid transparent; }
+        header { background: #1f2933; color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 24px; }
+        header h1 { font-size: 17px; margin: 0; padding: 16px 0; font-weight: 600; white-space: nowrap; }
+        nav a { color: #cbd2d9; text-decoration: none; margin-right: 14px; font-size: 13px; padding: 18px 0; display: inline-block; border-bottom: 3px solid transparent; }
         nav a:hover { color: #fff; }
         nav a.active { color: #fff; border-bottom-color: #3ebd93; }
         main { max-width: 1200px; margin: 0 auto; padding: 24px; }
@@ -42,6 +42,12 @@
         table.sortable th { cursor: pointer; user-select: none; }
         table.sortable th.asc::after { content: " ▲"; font-size: 10px; }
         table.sortable th.desc::after { content: " ▼"; font-size: 10px; }
+        table.compact { font-size: 13px; }
+        .nowrap { white-space: nowrap; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+        .badge.bajo { background: #cde2fb; color: #0d366b; }
+        .badge.medio { background: #2a78d6; color: #fff; }
+        .badge.alto { background: #104281; color: #fff; }
         @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -54,6 +60,9 @@
             {% url 'summary' as summary_url %}
             {% url 'data_quality' as quality_url %}
             {% url 'model' as model_url %}
+            {% url 'client_card' as card_url %}
+            {% url 'rebalance' as rebalance_url %}
+            {% url 'market' as market_url %}
             {% url 'sql_file_list' as sql_url %}
             {% url 'query_list' as queries_url %}
             <a href="{{ portfolio_url }}" class="{% if request.path == portfolio_url %}active{% endif %}">Portafolio</a>
@@ -61,6 +70,9 @@
             <a href="{{ summary_url }}" class="{% if request.path == summary_url %}active{% endif %}">Resumen</a>
             <a href="{{ quality_url }}" class="{% if request.path == quality_url %}active{% endif %}">Calidad de datos</a>
             <a href="{{ model_url }}" class="{% if request.path == model_url %}active{% endif %}">Modelo</a>
+            <a href="{{ card_url }}" class="{% if request.path == card_url %}active{% endif %}">Ficha</a>
+            <a href="{{ rebalance_url }}" class="{% if request.path == rebalance_url %}active{% endif %}">Rebalanceo</a>
+            <a href="{{ market_url }}" class="{% if request.path == market_url %}active{% endif %}">Mercado</a>
             <a href="{{ sql_url }}" class="{% if sql_url in request.path %}active{% endif %}">Archivos SQL</a>
             <a href="{{ queries_url }}" class="{% if queries_url in request.path %}active{% endif %}">Queries guardados</a>
         </nav>
