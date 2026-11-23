@@ -146,12 +146,7 @@ transformado AS (
         v.year::INT                                  AS anio,
         v.month::INT                                 AS mes,
         MAKE_DATE(v.year::INT, v.month::INT, 1)      AS fecha_corte,
-        CASE
-            -- Supuesto: 1002203023 es 10020203023 sin un 0. Es una sola fila,
-            -- del mismo producto, banca y perfil, y llena un día que le falta a ese cliente.
-            WHEN v.id_sistema_cliente = '1002203023' THEN '10020203023'
-            ELSE v.id_sistema_cliente
-        END                                          AS id_sistema_cliente,
+        v.id_sistema_cliente                         AS id_sistema_cliente,
         v.id_sistema_cliente ~ '^[0-9]+$'            AS id_cliente_confiable,
         COALESCE(v.macroactivo, m.macroactivo)       AS macroactivo,
         CASE

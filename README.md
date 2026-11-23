@@ -164,23 +164,6 @@ Es una simulación educativa, no una recomendación de inversión.
 - Los precios actuales y la TRM ponen al día los datos y muestran el efecto del mercado y del dólar.
 - La ficha junta todo lo de un cliente en una sola vista para preparar la conversación con el asesor.
 
-## Privacidad
-
-- Los CSV, el archivo `.env`, los resultados del notebook y la base de datos no se suben al repositorio.
-- Antes de hacer commit del notebook, instale `nbstripout` para que git guarde el notebook sin resultados:
-  ```bash
-  pip install nbstripout
-  nbstripout --install
-  ```
-
-## Limitaciones
-
-- Las volatilidades publicadas de fondos y ETF son las disponibles en 2025 y 2026, no las de la fecha de los datos.
-- Los activos sin código de catálogo no tienen nivel y quedan fuera del promedio de riesgo.
-- Los IDs en notación científica pueden mezclar clientes distintos.
-- Hay pocos clientes, así que los segmentos son descriptivos y no sirven para predecir.
-- Los precios de hoy solo cubren acciones y ETF de EE.UU. y no incluyen dividendos.
-
 ## Fuentes
 
 - Escala de riesgo: Reglamento Delegado (UE) 2017/653 (PRIIPs), anexo II — https://handbook.fca.org.uk/techstandards/PRIIPs/2017/reg_del_2017_653_oj/annex02.html
